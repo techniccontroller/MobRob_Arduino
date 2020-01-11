@@ -1,0 +1,6 @@
+{
+    "board": "ATTinyCore:avr:attinyx4",
+    "configuration": "LTO=disable,chip=84,clock=8internal,eesave=aenable,bod=disable,pinmapping=anew",
+    "sketch": "MobRob_4Stepper_Lib_v4\\MobRob_4Stepper_Lib_v4.ino",
+    "programmer": "AVR ISP"
+}
