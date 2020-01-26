@@ -247,7 +247,7 @@ void updatePose(){
   float diffLB = fakDirLB * stepperLB.calcRotationForSteps(stepperLB.getCurrentPosition()) * 2 * PI / 360;
 
   tmpX = radius/4.0 * (diffLF + diffRF + diffLB + diffRB);
-  tmpY = radius/4.0 * (diffLF - diffRF - diffLB + diffRB);
+  tmpY = radius/4.0 * (-diffLF + diffRF + diffLB - diffRB);
   tmpTheta = radius/4.0 * (-1*diffLF/(L1+L2) + diffRF/(L1+L2) - diffLB/(L1+L2) + diffRB/(L1+L2));
 
   /*String logmsg = "diffs/tmpX/poseX: ";
