@@ -236,15 +236,15 @@ void updateMotors(){
 }
 
 void updatePose(){
-  int fakDirRF = stepperRF.getDirection() == HIGH ? 1: -1;
-  int fakDirLF = stepperLF.getDirection() == LOW ? 1: -1;
-  int fakDirRB = stepperRB.getDirection() == HIGH ? 1: -1;
-  int fakDirLB = stepperLB.getDirection() == LOW ? 1: -1;
+  int dirRF = stepperRF.getDirection() == HIGH ? 1: -1;
+  int dirLF = stepperLF.getDirection() == LOW ? 1: -1;
+  int dirRB = stepperRB.getDirection() == HIGH ? 1: -1;
+  int dirLB = stepperLB.getDirection() == LOW ? 1: -1;
   
-  float diffRF = fakDirRF * stepperRF.calcRotationForSteps(stepperRF.getCurrentPosition()) * 2 * PI / 360;
-  float diffLF = fakDirLF * stepperLF.calcRotationForSteps(stepperLF.getCurrentPosition()) * 2 * PI / 360;
-  float diffRB = fakDirRB * stepperRB.calcRotationForSteps(stepperRB.getCurrentPosition()) * 2 * PI / 360;
-  float diffLB = fakDirLB * stepperLB.calcRotationForSteps(stepperLB.getCurrentPosition()) * 2 * PI / 360;
+  float diffRF = dirRF * stepperRF.calcRotationForSteps(stepperRF.getCurrentPosition()) * 2 * PI / 360;
+  float diffLF = dirLF * stepperLF.calcRotationForSteps(stepperLF.getCurrentPosition()) * 2 * PI / 360;
+  float diffRB = dirRB * stepperRB.calcRotationForSteps(stepperRB.getCurrentPosition()) * 2 * PI / 360;
+  float diffLB = dirLB * stepperLB.calcRotationForSteps(stepperLB.getCurrentPosition()) * 2 * PI / 360;
 
   tmpX = radius/4.0 * (diffLF + diffRF + diffLB + diffRB);
   tmpY = radius/4.0 * (-diffLF + diffRF + diffLB - diffRB);
