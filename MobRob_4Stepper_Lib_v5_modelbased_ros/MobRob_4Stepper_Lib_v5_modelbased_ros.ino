@@ -4,7 +4,8 @@
 #include "MultiDriverX4.h"
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
-#include <turtlesim/Pose.h>
+#include <myrobot_model/Pose.h>
+
 #include <roscpp/Empty.h>
 
 #define DIR_RIGHT_FRONT 14
@@ -32,7 +33,7 @@ ros::NodeHandle  nh;
 
 float g_vx = 0;
 float g_vy = 0;
-float g_omega = 0;
+float g_vth = 0;
 float tmpX=0, tmpY=0, tmpTheta=0;
 float poseX=0, poseY=0, poseTheta=0;
 
@@ -54,19 +55,19 @@ void messageCb( const geometry_msgs::Twist& vel_msg){
   }
   else{
     vel(vx, vy, omega);
-    poseX += tmpX;
-    poseY += tmpY;
+    poseX += tmpX * cos(poseTheta) - tmpY * sin(poseTheta);
+    poseY += tmpX * sin(poseTheta) + tmpY * cos(poseTheta);
     poseTheta +=tmpTheta;
   }
 
   g_vx = vx;
   g_vy = vy;
-  g_omega = omega;
+  g_vth = omega;
 }
 
 ros::Subscriber<geometry_msgs::Twist> vel_sub("/cmd_vel", messageCb );
 
-turtlesim::Pose pose_msg;
+myrobot_model::Pose pose_msg;
 ros::Publisher pose_pub("pose", &pose_msg);
 
 void callback(const roscpp::EmptyRequest & req, roscpp::EmptyResponse & res){
@@ -109,8 +110,6 @@ float L1 = 0.215/2;
 float L2 = 0.29/2;
 
 
-
-
 long lastPubTime = millis();
 
 // Returns true when all Motors stopped.
@@ -147,10 +146,6 @@ void setup() {
   nh.advertise(pose_pub);
   nh.subscribe(vel_sub);
   nh.advertiseService(server);
-
-  pose_msg.x = 0;
-  pose_msg.y = 0;
-  pose_msg.theta = 0;
 }
 
 void vel(float vx, float vy, float omega){
@@ -266,14 +261,14 @@ void updatePose(){
   logmsg.toCharArray(logmsg_array, logmsg.length()+1);
   nh.loginfo(logmsg_array);*/
   
-  /*pose_msg.x += g_vx*0.5;
-  pose_msg.y += g_vy*0.5;
-  pose_msg.theta += g_omega*0.5;*/
-
-  pose_msg.x = poseX + tmpX;
-  pose_msg.y = poseY + tmpY;
+  pose_msg.x = poseX + tmpX * cos(poseTheta) - tmpY * sin(poseTheta);
+  pose_msg.y = poseY + tmpX * sin(poseTheta) + tmpY * cos(poseTheta);
   pose_msg.theta = poseTheta + tmpTheta;
 
+  pose_msg.vx = g_vx;
+  pose_msg.vy = g_vy;
+  pose_msg.vth = g_vth;
+  
   pose_pub.publish( &pose_msg );
 }
 
@@ -288,7 +283,7 @@ void loop() {
     infinityMoveSetTime = millis();
   }
 
-  if(millis() - lastPubTime > 500){
+  if(millis() - lastPubTime > 100){
      updatePose();
      lastPubTime = millis();
   }
