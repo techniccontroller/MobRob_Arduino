@@ -263,6 +263,10 @@ void loop() {
           getParameters(startParam, params);
           int distAbs = params[0];
           targetPositionVERT = distAbs;
+          if(targetPositionVERT < 0)
+            targetPositionVERT = 0;
+          else if(targetPositionVERT > 4500)
+            targetPositionVERT = 4500;
           stepperVERT.stop();
           stepperVERT.startMove(targetPositionVERT - currentPositionVERT);
         }
@@ -272,6 +276,10 @@ void loop() {
           getParameters(startParam, params);
           int distRel = params[0];
           targetPositionVERT += distRel;
+          if(targetPositionVERT < 0)
+            targetPositionVERT = 0;
+          else if(targetPositionVERT > 4500)
+            targetPositionVERT = 4500;
           stepperVERT.stop();
           stepperVERT.startMove(targetPositionVERT - currentPositionVERT);
           //stepperVERT.startRotate(distRel);
@@ -312,6 +320,10 @@ void loop() {
           getParameters(startParam, params);
           int distAbs = params[0];
           targetPositionGRIP = distAbs;
+          if(targetPositionGRIP < 0)
+            targetPositionGRIP = 0;
+          else if(targetPositionGRIP > 3000)
+            targetPositionGRIP = 3000;
           stepperGRIP.stop();
           stepperGRIP.startMove(targetPositionGRIP - currentPositionGRIP);
         }
@@ -321,6 +333,10 @@ void loop() {
           getParameters(startParam, params);
           int distRel = params[0];
           targetPositionGRIP += distRel;
+          if(targetPositionGRIP < 0)
+            targetPositionGRIP = 0;
+          else if(targetPositionGRIP > 3000)
+            targetPositionGRIP = 3000;
           stepperGRIP.stop();
           stepperGRIP.startMove(targetPositionGRIP - currentPositionGRIP);
           //stepperGRIP.startRotate(distRel);
