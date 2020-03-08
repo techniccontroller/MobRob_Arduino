@@ -55,8 +55,8 @@ void messageCb( const geometry_msgs::Twist& vel_msg){
   }
   else{
     vel(vx, vy, omega);
-    poseX += tmpX * cos(poseTheta) - tmpY * sin(poseTheta);
-    poseY += tmpX * sin(poseTheta) + tmpY * cos(poseTheta);
+    poseX += tmpX * cos(poseTheta + tmpTheta) - tmpY * sin(poseTheta + tmpTheta);
+    poseY += tmpX * sin(poseTheta + tmpTheta) + tmpY * cos(poseTheta + tmpTheta);
     poseTheta +=tmpTheta;
   }
 
@@ -261,8 +261,8 @@ void updatePose(){
   logmsg.toCharArray(logmsg_array, logmsg.length()+1);
   nh.loginfo(logmsg_array);*/
   
-  pose_msg.x = poseX + tmpX * cos(poseTheta) - tmpY * sin(poseTheta);
-  pose_msg.y = poseY + tmpX * sin(poseTheta) + tmpY * cos(poseTheta);
+  pose_msg.x = poseX + tmpX * cos(poseTheta + tmpTheta) - tmpY * sin(poseTheta + tmpTheta);
+  pose_msg.y = poseY + tmpX * sin(poseTheta + tmpTheta) + tmpY * cos(poseTheta + tmpTheta);
   pose_msg.theta = poseTheta + tmpTheta;
 
   pose_msg.vx = g_vx;
