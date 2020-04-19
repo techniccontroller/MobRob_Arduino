@@ -1,11 +1,15 @@
-// Read Line command
+/**
+ * Created by techniccontroller 2019
+ * 
+ * Last modified by techniccontroller 19.04.2020
+ */
 
-#include "A4988.h"
+// include necessary libraries
+#include "A4988.h"                // Library for A4988 stepper motor driver
 #include "MultiDriverX4.h"
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
 #include <myrobot_model/Pose.h>
-
 #include <roscpp/Empty.h>
 
 #define DIR_RIGHT_FRONT 14
@@ -72,7 +76,7 @@ ros::Publisher pose_pub("pose", &pose_msg);
 
 void callback(const roscpp::EmptyRequest & req, roscpp::EmptyResponse & res){
   String logmsg = "current-steps: ";
-  logmsg += stepperRF.calcRotationForSteps(stepperRF.getCurrentPosition());
+  logmsg += stepperRF.calcRotationForSteps(stepperRF.getStepsCompleted());
   char logmsg_array[logmsg.length()+1];
   logmsg.toCharArray(logmsg_array, logmsg.length()+1);
   nh.loginfo(logmsg_array);
@@ -83,10 +87,10 @@ void callback(const roscpp::EmptyRequest & req, roscpp::EmptyResponse & res){
   poseX=0;
   poseY=0;
   poseTheta=0;
-  stepperRF.resetCurrentPostion();
-  stepperLF.resetCurrentPostion();
-  stepperRB.resetCurrentPostion();
-  stepperLB.resetCurrentPostion();
+  stepperRF.resetStepsCompleted();
+  stepperLF.resetStepsCompleted();
+  stepperRB.resetStepsCompleted();
+  stepperLB.resetStepsCompleted();
   nh.loginfo("reset pose...");
 }
 
@@ -206,10 +210,10 @@ void stopMotors(){
   controller.startBrake();
   infinityMoveSetTime = 0;
   
-  rmstpRF=stepperRF.getRemainingSteps();
-  rmstpLF=stepperLF.getRemainingSteps(); 
-  rmstpRB=stepperRB.getRemainingSteps();
-  rmstpLB=stepperLB.getRemainingSteps();
+  rmstpRF=stepperRF.getStepsRemaining();
+  rmstpLF=stepperLF.getStepsRemaining(); 
+  rmstpRB=stepperRB.getStepsRemaining();
+  rmstpLB=stepperLB.getStepsRemaining();
 }
 
 void updateMotors(){
@@ -224,22 +228,22 @@ void updateMotors(){
   stepperLB.setRPM(abs(rpmLB));
   controller.stop();
   controller.startRotate(degRF, degLF, degRB, degLB);
-  rmstpRF=stepperRF.getRemainingSteps();
-  rmstpLF=stepperLF.getRemainingSteps(); 
-  rmstpRB=stepperRB.getRemainingSteps();
-  rmstpLB=stepperLB.getRemainingSteps();
+  rmstpRF=stepperRF.getStepsRemaining();
+  rmstpLF=stepperLF.getStepsRemaining(); 
+  rmstpRB=stepperRB.getStepsRemaining();
+  rmstpLB=stepperLB.getStepsRemaining();
 }
 
 void updatePose(){
-  int dirRF = stepperRF.getDirection() == HIGH ? 1: -1;
-  int dirLF = stepperLF.getDirection() == LOW ? 1: -1;
-  int dirRB = stepperRB.getDirection() == HIGH ? 1: -1;
-  int dirLB = stepperLB.getDirection() == LOW ? 1: -1;
+  int dirRF = stepperRF.getDirection();
+  int dirLF = stepperLF.getDirection()*-1;
+  int dirRB = stepperRB.getDirection();
+  int dirLB = stepperLB.getDirection()*-1;
   
-  float diffRF = dirRF * stepperRF.calcRotationForSteps(stepperRF.getCurrentPosition()) * 2 * PI / 360;
-  float diffLF = dirLF * stepperLF.calcRotationForSteps(stepperLF.getCurrentPosition()) * 2 * PI / 360;
-  float diffRB = dirRB * stepperRB.calcRotationForSteps(stepperRB.getCurrentPosition()) * 2 * PI / 360;
-  float diffLB = dirLB * stepperLB.calcRotationForSteps(stepperLB.getCurrentPosition()) * 2 * PI / 360;
+  float diffRF = dirRF * stepperRF.calcRotationForSteps(stepperRF.getStepsCompleted()) * 2 * PI / 360;
+  float diffLF = dirLF * stepperLF.calcRotationForSteps(stepperLF.getStepsCompleted()) * 2 * PI / 360;
+  float diffRB = dirRB * stepperRB.calcRotationForSteps(stepperRB.getStepsCompleted()) * 2 * PI / 360;
+  float diffLB = dirLB * stepperLB.calcRotationForSteps(stepperLB.getStepsCompleted()) * 2 * PI / 360;
 
   tmpX = radius/4.0 * (diffLF + diffRF + diffLB + diffRB);
   tmpY = radius/4.0 * (-diffLF + diffRF + diffLB - diffRB);

@@ -1,0 +1,3 @@
+[submodule "libraries/StepperDriver"]
+	path = libraries/StepperDriver
+	url = https://github.com/techniccontroller/StepperDriver.git
