@@ -99,18 +99,18 @@ void getParameters(char* str, int* params){
 // update absolute position of vertical motor
 void updatePositionVERT(){
   if(stepperVERT.getDirection() == HIGH){
-    currentPositionVERT = targetPositionVERT - stepperVERT.getRemainingSteps();
+    currentPositionVERT = targetPositionVERT - stepperVERT.getStepsRemaining();
   }else{
-    currentPositionVERT = targetPositionVERT + stepperVERT.getRemainingSteps();
+    currentPositionVERT = targetPositionVERT + stepperVERT.getStepsRemaining();
   }
 }
 
 // update absolute position of gripper motor
 void updatePositionGRIP(){
   if(stepperGRIP.getDirection() == HIGH){
-    currentPositionGRIP = targetPositionGRIP - stepperGRIP.getRemainingSteps();
+    currentPositionGRIP = targetPositionGRIP - stepperGRIP.getStepsRemaining();
   }else{
-    currentPositionGRIP = targetPositionGRIP + stepperGRIP.getRemainingSteps();
+    currentPositionGRIP = targetPositionGRIP + stepperGRIP.getStepsRemaining();
   }
 }
 
