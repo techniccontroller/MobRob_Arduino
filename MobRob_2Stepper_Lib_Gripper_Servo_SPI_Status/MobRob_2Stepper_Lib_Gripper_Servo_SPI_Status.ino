@@ -64,13 +64,7 @@ int spiState = RECEIVE;
 
 // move gripper gripper to initial position
 void initGripper(){
-  digitalWrite(SLEEP, HIGH);
-  stepperGRIP.startRotate(-360*2);
-  unsigned wait_time_micros = stepperGRIP.nextAction();
-  while(wait_time_micros > 0 && digitalRead(END_GRIP) == HIGH){
-    wait_time_micros = stepperGRIP.nextAction();
-  }
-  stepperGRIP.stop();
+  gripGripper();
   currentPositionGRIP = 0;
   targetPositionGRIP  = 0;
 }
@@ -86,6 +80,17 @@ void initVertical(){
   stepperVERT.stop();
   currentPositionVERT = 0;
   targetPositionVERT  = 0;
+}
+
+// move gripper until sensor pressed
+void gripGripper(){
+  digitalWrite(SLEEP, HIGH);
+  stepperGRIP.startRotate(-360*2);
+  unsigned wait_time_micros = stepperGRIP.nextAction();
+  while(wait_time_micros > 0 && digitalRead(END_GRIP) == HIGH){
+    wait_time_micros = stepperGRIP.nextAction();
+  }
+  stepperGRIP.stop();
 }
 
 // extract paramerts from comma separated string
@@ -270,6 +275,15 @@ void loop() {
         else if(strcmp(startFunction, "rf") == 0){
           servo.refresh();
         }
+        else if(strcmp(startFunction, "gp") == 0){
+          long i = 0, d = 100000;
+          for(; i < 6; i++, d /= 10){
+            outputbuffer[i] = ((long)(servo.getAngle()/d))%10 + 48;
+          }
+          outputbuffer[6] = '\n';
+          spiState = SEND;
+          posOut = 0;
+        }
       }
       // ##################################################################################################### //
       //                                      VERTICAL
@@ -334,8 +348,10 @@ void loop() {
       else if(strcmp(inputbuffer, "gr") == 0){
         // command for gripper motor received
         if(strcmp(startFunction, "it") == 0){
-          // split string in int-array;
           initGripper();
+        }
+        else if(strcmp(startFunction, "gr") == 0){
+          gripGripper();
         }
         else if(strcmp(startFunction, "sp") == 0){
           // split string in int-array;

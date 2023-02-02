@@ -71,3 +71,7 @@ void TinyServo::setPulseDistance(int pulse_distance){
 void TinyServo::setActive(int value){
 	active = value;
 }
+
+int TinyServo::getAngle(){
+	return _angle;
+}
