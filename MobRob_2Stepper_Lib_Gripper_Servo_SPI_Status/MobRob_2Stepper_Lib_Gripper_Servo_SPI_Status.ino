@@ -34,6 +34,9 @@
 #define RECEIVE 1
 #define SEND 2
 
+#define LIMIT_VERT 4500
+#define LIMIT_GRIP 2900
+
 A4988 stepperGRIP(200, DIR_GRIP, STEP_GRIP);
 A4988 stepperVERT(200, DIR_VERTICAL,  STEP_VERTICAL);
 TinyServo servo(SERVO);
@@ -112,6 +115,36 @@ void updatePositionGRIP(){
   }else{
     currentPositionGRIP = targetPositionGRIP + stepperGRIP.getStepsRemaining();
   }
+}
+
+// convert mm in absolute steps for vertical motor
+int toStepsAbsVERT(int mmPos){
+  return mmPos * -40 + 5680;
+}
+
+// convert steps in mm for vertical motor
+int toMMAbsVERT(int stepsPos){
+  return (stepsPos - 5680)/-40;
+}
+
+// convert mm in relative steps for vertical motor
+int toStepsRelVERT(int mmPos){
+  return mmPos * -40;
+}
+
+// convert steps in mm for vertical motor
+int toMMAbsRelVERT(int stepsPos){
+  return stepsPos / -40;
+}
+
+// convert mm in steps for gripper
+int toStepsGRIP(int mmPos){
+  return mmPos * 19;
+}
+
+// convert steps in mm for gripper
+int toMMGRIP(int stepsPos){
+  return stepsPos / 19;
 }
 
 // setup function
@@ -235,10 +268,7 @@ void loop() {
           servo.write(angle);
         }
         else if(strcmp(startFunction, "rf") == 0){
-            if(millis()-lasttime > 20){
-              servo.refresh();
-              lasttime = millis();
-            } 
+          servo.refresh();
         }
       }
       // ##################################################################################################### //
@@ -262,11 +292,11 @@ void loop() {
           int params[1] = {0};
           getParameters(startParam, params);
           int distAbs = params[0];
-          targetPositionVERT = distAbs;
+          targetPositionVERT = toStepsAbsVERT(distAbs);
           if(targetPositionVERT < 0)
             targetPositionVERT = 0;
-          else if(targetPositionVERT > 4500)
-            targetPositionVERT = 4500;
+          else if(targetPositionVERT > LIMIT_VERT)
+            targetPositionVERT = LIMIT_VERT;
           stepperVERT.stop();
           stepperVERT.startMove(targetPositionVERT - currentPositionVERT);
         }
@@ -275,11 +305,11 @@ void loop() {
           int params[1] = {0};
           getParameters(startParam, params);
           int distRel = params[0];
-          targetPositionVERT += distRel;
+          targetPositionVERT += toStepsRelVERT(distRel);
           if(targetPositionVERT < 0)
             targetPositionVERT = 0;
-          else if(targetPositionVERT > 4500)
-            targetPositionVERT = 4500;
+          else if(targetPositionVERT > LIMIT_VERT)
+            targetPositionVERT = LIMIT_VERT;
           stepperVERT.stop();
           stepperVERT.startMove(targetPositionVERT - currentPositionVERT);
           //stepperVERT.startRotate(distRel);
@@ -291,7 +321,7 @@ void loop() {
         else if(strcmp(startFunction, "gp") == 0){
           long i = 0, d = 100000;
           for(; i < 6; i++, d /= 10){
-            outputbuffer[i] = ((long)(currentPositionVERT/d))%10 + 48;
+            outputbuffer[i] = ((long)(toMMAbsVERT(currentPositionVERT)/d))%10 + 48;
           }
           outputbuffer[6] = '\n';
           spiState = SEND;
@@ -319,11 +349,11 @@ void loop() {
           int params[1] = {0};
           getParameters(startParam, params);
           int distAbs = params[0];
-          targetPositionGRIP = distAbs;
+          targetPositionGRIP = toStepsGRIP(distAbs);
           if(targetPositionGRIP < 0)
             targetPositionGRIP = 0;
-          else if(targetPositionGRIP > 3000)
-            targetPositionGRIP = 3000;
+          else if(targetPositionGRIP > LIMIT_GRIP)
+            targetPositionGRIP = LIMIT_GRIP;
           stepperGRIP.stop();
           stepperGRIP.startMove(targetPositionGRIP - currentPositionGRIP);
         }
@@ -332,11 +362,11 @@ void loop() {
           int params[1] = {0};
           getParameters(startParam, params);
           int distRel = params[0];
-          targetPositionGRIP += distRel;
+          targetPositionGRIP += toStepsGRIP(distRel);
           if(targetPositionGRIP < 0)
             targetPositionGRIP = 0;
-          else if(targetPositionGRIP > 3000)
-            targetPositionGRIP = 3000;
+          else if(targetPositionGRIP > LIMIT_GRIP)
+            targetPositionGRIP = LIMIT_GRIP;
           stepperGRIP.stop();
           stepperGRIP.startMove(targetPositionGRIP - currentPositionGRIP);
           //stepperGRIP.startRotate(distRel);
@@ -348,7 +378,7 @@ void loop() {
         else if(strcmp(startFunction, "gp") == 0){
           long i = 0, d = 100000;
           for(; i < 6; i++, d /= 10){
-            outputbuffer[i] = ((long)(currentPositionGRIP/d))%10 + 48;
+            outputbuffer[i] = ((long)(toMMGRIP(currentPositionGRIP)/d))%10 + 48;
           }
           outputbuffer[6] = '\n';
           spiState = SEND;
@@ -391,5 +421,5 @@ void loop() {
   }
   
   updatePositionGRIP();
-  updatePositionVERT(); 
+  updatePositionVERT();
 }
