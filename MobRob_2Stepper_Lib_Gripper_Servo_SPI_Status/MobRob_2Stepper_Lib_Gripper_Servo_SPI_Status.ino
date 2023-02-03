@@ -44,6 +44,8 @@ long targetPositionVERT = 0;
 long targetPositionGRIP = 0;
 long currentPositionVERT = 0;
 long currentPositionGRIP = 0;
+bool isInitializedVERT = false;
+bool isInitializedGRIP = false;
 
 //MultiDriver controller(stepperGRIP, stepperVERT);
 bool letStepperActive = false;
@@ -62,11 +64,26 @@ long lasttime = millis();
 // spi communication state
 int spiState = RECEIVE;
 
+bool isEndGripPressed(){
+  return digitalRead(END_GRIP) == LOW;
+}
+
+bool isEndVertPressed(){
+  return digitalRead(END_VERT) == HIGH;
+}
+
 // move gripper gripper to initial position
 void initGripper(){
-  gripGripper();
+  digitalWrite(SLEEP, HIGH);
+  stepperGRIP.startRotate(-360*2);
+  unsigned wait_time_micros = stepperGRIP.nextAction();
+  while(wait_time_micros > 0 && !isEndGripPressed()){
+    wait_time_micros = stepperGRIP.nextAction();
+  }
+  stepperGRIP.stop();
   currentPositionGRIP = 0;
   targetPositionGRIP  = 0;
+  isInitializedGRIP = true;
 }
 
 // move vetical motor to initial position
@@ -74,23 +91,23 @@ void initVertical(){
   digitalWrite(SLEEP, HIGH);
   stepperVERT.startRotate(-360*3);
   unsigned wait_time_micros = stepperVERT.nextAction();
-  while(wait_time_micros > 0 && digitalRead(END_VERT) == LOW){
+  while(wait_time_micros > 0 && !isEndVertPressed()){
     wait_time_micros = stepperVERT.nextAction();
   }
   stepperVERT.stop();
   currentPositionVERT = 0;
   targetPositionVERT  = 0;
+  isInitializedVERT = true;
 }
 
-// move gripper until sensor pressed
-void gripGripper(){
-  digitalWrite(SLEEP, HIGH);
-  stepperGRIP.startRotate(-360*2);
-  unsigned wait_time_micros = stepperGRIP.nextAction();
-  while(wait_time_micros > 0 && digitalRead(END_GRIP) == HIGH){
-    wait_time_micros = stepperGRIP.nextAction();
-  }
+void stopGripper(){
   stepperGRIP.stop();
+  targetPositionGRIP = currentPositionGRIP;
+}
+
+void stopVertical(){
+  stepperVERT.stop();
+  targetPositionVERT = currentPositionVERT;
 }
 
 // extract paramerts from comma separated string
@@ -106,7 +123,7 @@ void getParameters(char* str, int* params){
 
 // update absolute position of vertical motor
 void updatePositionVERT(){
-  if(stepperVERT.getDirection() == HIGH){
+  if(stepperVERT.getDirection() == 1){
     currentPositionVERT = targetPositionVERT - stepperVERT.getStepsRemaining();
   }else{
     currentPositionVERT = targetPositionVERT + stepperVERT.getStepsRemaining();
@@ -115,7 +132,7 @@ void updatePositionVERT(){
 
 // update absolute position of gripper motor
 void updatePositionGRIP(){
-  if(stepperGRIP.getDirection() == HIGH){
+  if(stepperGRIP.getDirection() == 1){
     currentPositionGRIP = targetPositionGRIP - stepperGRIP.getStepsRemaining();
   }else{
     currentPositionGRIP = targetPositionGRIP + stepperGRIP.getStepsRemaining();
@@ -150,6 +167,15 @@ int toStepsGRIP(int mmPos){
 // convert steps in mm for gripper
 int toMMGRIP(int stepsPos){
   return stepsPos / 19;
+}
+
+void fillOutputBuffer(uint16_t value){
+  uint8_t i = 2;           
+  uint16_t d = 1000;
+  for(; i < 6; i++, d /= 10){
+    outputbuffer[i] = ((uint16_t)(value/d))%10 + 48;
+  }
+  outputbuffer[6] = '\n';
 }
 
 // setup function
@@ -197,12 +223,12 @@ void setup() {
   sei();
   USIDR = 42;
 
-  outputbuffer[0] = 'H';
-  outputbuffer[1] = 'e';
-  outputbuffer[2] = 'l';
-  outputbuffer[3] = 'l';
-  outputbuffer[4] = 'o';
-  outputbuffer[5] = 'W';
+  outputbuffer[0] = '0';
+  outputbuffer[1] = '0';
+  outputbuffer[2] = '0';
+  outputbuffer[3] = '0';
+  outputbuffer[4] = '0';
+  outputbuffer[5] = '0';
   outputbuffer[6] = '\n';
 }
 
@@ -276,11 +302,7 @@ void loop() {
           servo.refresh();
         }
         else if(strcmp(startFunction, "gp") == 0){
-          long i = 0, d = 100000;
-          for(; i < 6; i++, d /= 10){
-            outputbuffer[i] = ((long)(servo.getAngle()/d))%10 + 48;
-          }
-          outputbuffer[6] = '\n';
+          fillOutputBuffer(servo.getAngle());
           spiState = SEND;
           posOut = 0;
         }
@@ -329,13 +351,13 @@ void loop() {
           //stepperVERT.startRotate(distRel);
         }
         else if(strcmp(startFunction, "st") == 0){
-          stepperVERT.stop();
-          targetPositionVERT = currentPositionVERT;
+          stopVertical();
         }
         else if(strcmp(startFunction, "gp") == 0){
-          long i = 0, d = 100000;
-          for(; i < 6; i++, d /= 10){
-            outputbuffer[i] = ((long)(toMMAbsVERT(currentPositionVERT)/d))%10 + 48;
+          if(isInitializedVERT){
+            fillOutputBuffer(toMMAbsVERT(currentPositionVERT));
+          }else{
+            fillOutputBuffer(9999);
           }
           outputbuffer[6] = '\n';
           spiState = SEND;
@@ -349,9 +371,6 @@ void loop() {
         // command for gripper motor received
         if(strcmp(startFunction, "it") == 0){
           initGripper();
-        }
-        else if(strcmp(startFunction, "gr") == 0){
-          gripGripper();
         }
         else if(strcmp(startFunction, "sp") == 0){
           // split string in int-array;
@@ -388,15 +407,19 @@ void loop() {
           //stepperGRIP.startRotate(distRel);
         }
         else if(strcmp(startFunction, "st") == 0){
-          stepperGRIP.stop();
-          targetPositionGRIP = currentPositionGRIP;
+          stopGripper();
         }
         else if(strcmp(startFunction, "gp") == 0){
-          long i = 0, d = 100000;
-          for(; i < 6; i++, d /= 10){
-            outputbuffer[i] = ((long)(toMMGRIP(currentPositionGRIP)/d))%10 + 48;
+          if(isInitializedGRIP){
+            fillOutputBuffer(toMMGRIP(currentPositionGRIP));
+          }else{
+            fillOutputBuffer(9999);
           }
-          outputbuffer[6] = '\n';
+          spiState = SEND;
+          posOut = 0;
+        }
+        else if(strcmp(startFunction, "gg") == 0){
+          fillOutputBuffer(isEndGripPressed());
           spiState = SEND;
           posOut = 0;
         }
@@ -414,11 +437,8 @@ void loop() {
           letStepperActive = active;
         }
         else if(strcmp(startFunction, "st") == 0){
-          stepperGRIP.stop();
-          stepperVERT.stop();
-          letStepperActive == 0;
-          targetPositionGRIP = currentPositionGRIP;
-          targetPositionVERT = currentPositionVERT;
+          stopGripper();
+          stopVertical();
         }
       }
       // ##################################################################################################### //
@@ -434,6 +454,13 @@ void loop() {
   }
   else{
     digitalWrite(SLEEP, HIGH);
+  }
+
+  if(isEndGripPressed() && (stepperGRIP.getDirection() == -1) && waittimeGRIP > 0){
+    stopGripper();
+  }
+  if(isEndVertPressed() && (stepperVERT.getDirection() == -1) && waittimeVERT > 0){
+    stopVertical();
   }
   
   updatePositionGRIP();
